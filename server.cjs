@@ -16,7 +16,7 @@ const extractHandle = (url) => {
 const estimateCPM = (views) => {
   const low = views * 0.5 / 1000;
   const high = views * 2.0 / 1000;
-  return `$${low.toFixed(0)} - $${high.toFixed(0)}`;
+  return "$" + low.toFixed(0) + " - $" + high.toFixed(0);
 };
 
 const getViewAverages = (totalViews, creationDate) => {
@@ -41,30 +41,28 @@ const inferReligiousKeywords = (text) => {
     Buddhism: [/buddha|dharma|sangha/i]
   };
 
-  for (const [religion, patterns] of Object.entries(religionMap)) {
-    for (const regex of patterns) {
-      if (regex.test(text)) return religion;
-    }
+  for (const religion in religionMap) {
+    if (religionMap[religion].some((r) => r.test(text))) return religion;
   }
   return "Not Detected";
 };
 
 app.get('/api/check', async (req, res) => {
-  const { url } = req.query;
+  const url = req.query.url;
   if (!url) return res.status(400).json({ error: 'Missing URL' });
 
   const handle = extractHandle(url);
   if (!handle) return res.status(400).json({ error: 'Invalid YouTube handle URL format.' });
 
   try {
-    const searchUrl = \`https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=\${handle}&key=\${YOUTUBE_API_KEY}\`;
+    const searchUrl = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=" + handle + "&key=" + YOUTUBE_API_KEY;
     const searchResp = await axios.get(searchUrl);
     const items = searchResp.data.items;
     if (!items.length) throw new Error('Channel not found');
 
     const channelId = items[0].snippet.channelId;
 
-    const statsUrl = \`https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,topicDetails,brandingSettings&id=\${channelId}&key=\${YOUTUBE_API_KEY}\`;
+    const statsUrl = "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,topicDetails,brandingSettings&id=" + channelId + "&key=" + YOUTUBE_API_KEY;
     const statsResp = await axios.get(statsUrl);
     const channel = statsResp.data.items[0];
 
@@ -85,7 +83,7 @@ app.get('/api/check', async (req, res) => {
     const viewAverages = getViewAverages(views, publishedAt);
     const description = channel.snippet.description;
     const religion = inferReligiousKeywords(description);
-    const channelUrl = \`https://youtube.com/channel/\${channelId}\`;
+    const channelUrl = "https://youtube.com/channel/" + channelId;
 
     const profileImage = channel.snippet.thumbnails.high.url;
     const coverArt = channel.brandingSettings && channel.brandingSettings.image
@@ -117,4 +115,5 @@ app.get('/api/check', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`API running on port ${PORT}`));
+app.listen(PORT, () => console.log("API running on port " + PORT));
+
